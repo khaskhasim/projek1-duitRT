@@ -1,0 +1,16 @@
+@media (max-width: 992px) {
+  .sidebar {
+    transform: translateX(-100%);
+    position: fixed;
+    z-index: 1050;
+  }
+
+  .sidebar.active {
+    transform: translateX(0);
+  }
+
+  .main-content,
+  footer {
+    margin-left: 0 !important;
+  }
+}

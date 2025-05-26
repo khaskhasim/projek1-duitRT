@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Edit Iuran{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h4>Edit Iuran</h4>
+  <form method="POST">
+    <div class="mb-3">
+      <label>Nama Warga</label>
+      <input type="text" class="form-control" value="{{ iuran.warga.nama }}" disabled>
+    </div>
+    <div class="mb-3">
+      <label>Tanggal</label>
+      <input type="date" class="form-control" name="tanggal" value="{{ iuran.tanggal }}" required>
+    </div>
+    <div class="mb-3">
+      <label>Jumlah (Rp)</label>
+      <input type="number" class="form-control" name="jumlah" value="{{ iuran.jumlah }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Simpan</button>
+    <a href="{{ url_for('daftar_iuran') }}" class="btn btn-secondary">Batal</a>
+  </form>
+</div>
+{% endblock %}

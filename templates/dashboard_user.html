@@ -1,0 +1,12 @@
+
+{% extends 'base.html' %}
+{% block title %}Dashboard Warga - Kas RT{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4"><i class="bi bi-house-door"></i> Dashboard Warga</h2>
+  <p>Halo <strong>{{ session['username'] }}</strong>, berikut informasi ringkas iuran Anda.</p>
+  <div class="alert alert-info">
+    Untuk melihat detail iuran mingguan dan riwayat pengeluaran, gunakan menu "Iuran Saya" dan "Riwayat Keuangan" di sidebar.
+  </div>
+</div>
+{% endblock %}

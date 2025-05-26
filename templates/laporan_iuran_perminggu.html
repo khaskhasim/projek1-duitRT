@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Laporan Iuran per Warga (Mingguan){% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4"><i class="bi bi-calendar-week"></i> Laporan Iuran per Warga ({{ bulan }}/{{ tahun }})</h2>
+
+  <!-- Filter -->
+  <form method="get" class="row g-2 mb-4 align-items-end">
+    <div class="col-md-2">
+      <label for="bulan" class="form-label mb-1">Bulan</label>
+      <select name="bulan" id="bulan" class="form-select form-select-sm">
+        {% for i in range(1, 13) %}
+        <option value="{{ i }}" {% if bulan == i %}selected{% endif %}>
+          {{ ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][i-1] }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label for="tahun" class="form-label mb-1">Tahun</label>
+      <select name="tahun" id="tahun" class="form-select form-select-sm">
+        {% for y in range(2020, datetime.now().year + 1) %}
+        <option value="{{ y }}" {% if tahun == y %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-auto">
+      <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-filter"></i> Tampilkan</button>
+    </div>
+  </form>
+
+  <!-- Tabel -->
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Nama Warga</th>
+          {% for label in minggu_labels %}
+          <th class="text-end">{{ label }}</th>
+          {% endfor %}
+          <th class="text-end">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for nama, minggu_data in data.items() %}
+        <tr>
+          <td>{{ nama }}</td>
+{% set ns = namespace(total=0) %}
+{% for i in range(1, 6) %}
+  {% set minggu = minggu_data.get(i, 0) %}
+  <td class="text-end">Rp {{ "{:,.0f}".format(minggu) if minggu else "-" }}</td>
+  {% set ns.total = ns.total + minggu %}
+{% endfor %}
+<td class="text-end fw-bold">Rp {{ "{:,.0f}".format(ns.total) }}</td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

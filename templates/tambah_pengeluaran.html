@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Tambah Pengeluaran - Kas RT{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2><i class="bi bi-journal-plus"></i> Tambah Pengeluaran Baru</h2>
+    <a href="{{ url_for('daftar_pengeluaran') }}" class="btn btn-secondary">
+      <i class="bi bi-arrow-left"></i> Kembali
+    </a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('tambah_pengeluaran') }}">
+        <div class="row g-3">
+          <!-- Tanggal -->
+          <div class="col-12 col-md-4">
+            <label for="tanggal" class="form-label">Tanggal</label>
+            <input type="date" class="form-control" id="tanggal" name="tanggal" 
+                   value="{{ date.today().strftime('%Y-%m-%d') }}" required>
+          </div>
+
+          <!-- Penerima -->
+          <div class="col-12 col-md-8">
+            <label for="penerima" class="form-label">Penerima</label>
+            <input type="text" class="form-control" id="penerima" name="penerima" required placeholder="Nama penerima">
+          </div>
+
+          <!-- Keterangan -->
+          <div class="col-12">
+            <label for="keterangan" class="form-label">Keterangan</label>
+            <textarea class="form-control" id="keterangan" name="keterangan" rows="3" required
+                      placeholder="Contoh: Belanja kebutuhan bulanan"></textarea>
+          </div>
+
+          <!-- Jumlah -->
+          <div class="col-12 col-md-6">
+            <label for="jumlah" class="form-label">Jumlah (Rp)</label>
+            <input type="number" class="form-control" id="jumlah" name="jumlah" 
+                   min="1000" step="500" required placeholder="100000">
+          </div>
+        </div>
+
+        <!-- Tombol Simpan -->
+        <div class="mt-4 text-end">
+          <button type="submit" class="btn btn-primary px-4 py-2 w-100 w-md-auto">
+            <i class="bi bi-save"></i> Simpan Pengeluaran
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

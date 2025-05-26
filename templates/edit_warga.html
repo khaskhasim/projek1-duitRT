@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Warga - Kas RT{% endblock %}
+
+{% block styles %}
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #4e73df;
+      --secondary-color: #f8f9fc;
+      --accent-color: #2e59d9;
+    }
+    
+    body {
+      background-color: #f8f9fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .form-container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    
+    .form-header {
+      border-bottom: 1px solid #e3e6f0;
+      padding-bottom: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .form-header h2 {
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+    
+    .form-label {
+      font-weight: 500;
+      color: #5a5c69;
+    }
+    
+    .form-control {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      border: 1px solid #d1d3e2;
+      transition: all 0.3s;
+    }
+    
+    .form-control:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.25);
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+      padding: 0.5rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--accent-color);
+      border-color: var(--accent-color);
+      transform: translateY(-2px);
+    }
+    
+    .btn-secondary {
+      padding: 0.5rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+    }
+    
+    .input-group-text {
+      background-color: #f8f9fc;
+      border-radius: 8px 0 0 8px;
+    }
+    
+    @media (max-width: 768px) {
+      .form-container {
+        margin: 1rem;
+        padding: 1.5rem;
+      }
+      
+      .form-header h2 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="container mt-3">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Main Content -->
+
+    <div class="form-container">
+      <div class="form-header">
+        <h2><i class="bi bi-pencil"></i> Edit Data Warga</h2>
+        <p class="text-muted">Edit data warga {{ warga.nama }}</p>
+      </div>
+      
+      <form method="POST" action="{{ url_for('edit_warga', id=warga.id) }}">
+        <div class="row g-3">
+          <!-- Nama Lengkap -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label for="nama" class="form-label"><i class="bi bi-person"></i> Nama Lengkap</label>
+              <input type="text" class="form-control" id="nama" name="nama" value="{{ warga.nama }}" required>
+            </div>
+          </div>
+          
+          <!-- NIK -->
+<div class="mb-3">
+    <label for="nik" class="form-label">NIK</label>
+    <input type="text" class="form-control" id="nik" name="nik" 
+           value="{{ warga.nik if warga and warga.nik else '' }}" 
+           placeholder="Kosongkan jika tidak ada">
+</div>
+          
+          <!-- Alamat -->
+          <div class="col-12">
+            <div class="mb-3">
+              <label for="alamat" class="form-label"><i class="bi bi-house"></i> Alamat</label>
+              <textarea class="form-control" id="alamat" name="alamat" rows="3" required>{{ warga.alamat }}</textarea>
+            </div>
+          </div>
+          
+<!-- No. Telepon -->
+<div class="mb-3">
+  <label for="telepon" class="form-label">Telepon</label>
+  <div class="input-group">
+    <span class="input-group-text">+62</span>
+    <input type="tel" class="form-control" id="telepon" name="telepon"
+           value="{{ warga.telepon if warga and warga.telepon else '' }}"
+           placeholder="81234567890 (kosongkan jika tidak ada)">
+  </div>
+
+  <small class="text-muted">Contoh: 81234567890 (tanpa kode negara +62)</small>
+  <div class="invalid-feedback">
+    Harap masukkan 9-13 digit nomor telepon (tanpa +62)
+  </div>
+</div>
+<!-- Username Login -->
+<div class="col-md-6">
+  <div class="mb-3">
+    <label for="username" class="form-label"><i class="bi bi-person-badge"></i> Username Login</label>
+    <input type="text" class="form-control" id="username" name="username" value="{{ warga.username }}" required>
+  </div>
+</div>
+
+<!-- Password Baru (Opsional) -->
+<div class="col-md-6">
+  <div class="mb-3">
+    <label for="password" class="form-label"><i class="bi bi-lock"></i> Password Baru (kosongkan jika tidak ganti)</label>
+    <input type="password" class="form-control" id="password" name="password" placeholder="Isi hanya jika ingin mengganti">
+  </div>
+</div>
+
+          <!-- Status -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label"><i class="bi bi-person-check"></i> Status</label>
+              <div class="d-flex gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="status" id="statusAktif" value="aktif" {{ 'checked' if warga.status == 'aktif' }}>
+                  <label class="form-check-label" for="statusAktif">Aktif</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="status" id="statusNonAktif" value="nonaktif" {{ 'checked' if warga.status == 'nonaktif' }}>
+                  <label class="form-check-label" for="statusNonAktif">Non-Aktif</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{{ url_for('data_warga') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Kembali
+          </a>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i> Simpan Perubahan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block scripts %}
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Form validation feedback
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+      form.addEventListener('submit', (event) => {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+      }, false);
+    });
+    
+    // Input mask for phone number
+    const phoneInput = document.getElementById('telepon');
+    if (phoneInput) {
+      phoneInput.addEventListener('input', (e) => {
+        const x = e.target.value.replace(/\D/g, '').match(/(\d{0,3})(\d{0,4})(\d{0,4})/);
+        e.target.value = !x[2] ? x[1] : x[1] + '-' + x[2] + (x[3] ? '-' + x[3] : '');
+      });
+    }
+  </script>
+{% endblock %}

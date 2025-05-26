@@ -1,0 +1,8 @@
+flask
+flask_sqlalchemy
+flask_migrate
+flask_bcrypt
+flask_cors
+xlsxwriter
+fpdf
+pytz

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Form User{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h3>{{ user and 'Edit' or 'Tambah' }} User Login</h3>
+  <form method="POST">
+    <div class="mb-3">
+      <label for="username" class="form-label">Username</label>
+      <input type="text" name="username" id="username" class="form-control" value="{{ user.username if user else '' }}" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="role" class="form-label">Role</label>
+      <select name="role" id="role" class="form-select" required>
+        <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>Admin</option>
+        <option value="petugas" {% if user and user.role == 'petugas' %}selected{% endif %}>Petugas</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="password" class="form-label">Password {% if user %}<small>(Kosongkan jika tidak diubah)</small>{% endif %}</label>
+      <input type="password" name="password" id="password" class="form-control" {% if not user %}required{% endif %}>
+    </div>
+
+    <button type="submit" class="btn btn-success">
+      <i class="bi bi-save"></i> Simpan
+    </button>
+    <a href="{{ url_for('manajemen_user') }}" class="btn btn-secondary">Kembali</a>
+  </form>
+</div>
+{% endblock %}

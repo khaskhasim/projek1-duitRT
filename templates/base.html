@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Admin Dashboard - Kas RT{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --sidebar-width: 240px;
+      --primary-color: #343a40;
+      --secondary-color: #495057;
+    }
+    body {
+      min-height: 100vh;
+      background-color: #f8f9fa;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar {
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: var(--sidebar-width);
+      background-color: var(--primary-color);
+      padding-top: 60px;
+      color: white;
+      transition: all 0.3s;
+      overflow-y: auto;
+      z-index: 100;
+    }
+    .sidebar a {
+      color: white;
+      padding: 12px 15px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .sidebar a:hover {
+      background-color: var(--secondary-color);
+    }
+    .sidebar i {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+    .sidebar .menu-title {
+      padding: 15px 20px 5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      opacity: 0.8;
+    }
+    .main-content {
+      margin-left: var(--sidebar-width);
+      padding: 80px 20px 20px;
+      flex: 1;
+    }
+    .navbar {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      z-index: 1000;
+      background-color: var(--primary-color);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 20px;
+    }
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      font-weight: 600;
+      gap: 10px;
+      color: white;
+    }
+    .navbar-brand img {
+      height: 32px;
+    }
+    footer {
+      background-color: var(--primary-color);
+      color: white;
+      text-align: center;
+      padding: 15px;
+      margin-left: var(--sidebar-width);
+    }
+    @media (max-width: 992px) {
+      .sidebar {
+        position: absolute;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-in-out;
+      }
+      .sidebar.active {
+        transform: translateX(0);
+      }
+      .main-content {
+        margin-left: 0;
+        padding: 80px 15px 20px;
+      }
+      footer {
+        margin-left: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <button class="btn btn-outline-light d-lg-none" id="menuToggle"><i class="bi bi-list"></i></button>
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
+      duitRT
+    </div>
+    <div><i class="bi bi-person-circle me-2"></i>{{ session['username'] }}</div>
+  </nav>
+<div class="sidebar" id="sidebar">
+  <a href="{{ url_for('index') }}"><i class="bi bi-house"></i><span class="sidebar-text">Beranda</span></a>
+
+  {% if session['role'] == 'admin' %}
+    <div class="menu-title">Kelola Data</div>
+    <a href="{{ url_for('data_warga') }}"><i class="bi bi-person-plus"></i><span class="sidebar-text">Data Warga</span></a>
+    <a href="{{ url_for('input_iuran_petugas') }}"><i class="bi bi-cash-coin"></i><span class="sidebar-text">Input Iuran</span></a>
+    <a href="{{ url_for('daftar_iuran') }}"><i class="bi bi-table"></i><span class="sidebar-text">Daftar Iuran</span></a>
+    <a href="{{ url_for('tambah_pengeluaran') }}"><i class="bi bi-journal-minus"></i><span class="sidebar-text">Tambah Pengeluaran</span></a>
+
+    <div class="menu-title mt-3">Laporan</div>
+    <a href="{{ url_for('laporan') }}"><i class="bi bi-clipboard-data"></i><span class="sidebar-text">Laporan Keuangan</span></a>
+    <a href="{{ url_for('laporan_input_petugas') }}"><i class="bi bi-person-lines-fill"></i><span class="sidebar-text">Laporan Input</span></a>
+    <a href="{{ url_for('laporan_iuran_perminggu') }}"><i class="bi bi-graph-up"></i><span class="sidebar-text">Laporan Mingguan</span></a>
+
+  {% elif session['role'] == 'petugas' %}
+    <div class="menu-title">Tugas</div>
+    <a href="{{ url_for('input_iuran_petugas') }}"><i class="bi bi-cash-coin"></i><span class="sidebar-text">Input Iuran</span></a>
+    <a href="{{ url_for('daftar_iuran') }}"><i class="bi bi-table"></i><span class="sidebar-text">Daftar Iuran</span></a>
+    <a href="{{ url_for('tambah_pengeluaran') }}"><i class="bi bi-journal-minus"></i><span class="sidebar-text">Tambah Pengeluaran</span></a>
+
+    <div class="menu-title mt-3">Laporan</div>
+    <a href="{{ url_for('laporan_input_petugas') }}"><i class="bi bi-person-lines-fill"></i><span class="sidebar-text">Laporan Input</span></a>
+    <a href="{{ url_for('laporan_iuran_perminggu') }}"><i class="bi bi-graph-up-arrow"></i><span class="sidebar-text">Laporan Mingguan</span></a>
+
+  {% elif session['role'] == 'user' %}
+    <div class="menu-title">Laporan</div>
+    <a href="{{ url_for('laporan') }}"><i class="bi bi-clipboard-check"></i><span class="sidebar-text">Riwayat Keuangan</span></a>
+    <a href="{{ url_for('iuran_saya') }}"><i class="bi bi-graph-up"></i><span class="sidebar-text">Iuran Saya</span></a>
+  {% endif %}
+
+  <div class="menu-title mt-3">Akun</div>
+  {% if session['role'] == 'admin' %}
+<a href="{{ url_for('manajemen_user') }}"><i class="bi bi-person-gear"></i><span class="sidebar-text">Manajemen User</span></a>
+{% endif %}
+
+  <a href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i><span class="sidebar-text">Logout</span></a>
+</div>
+
+
+  <div class="main-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="container mt-3">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+
+  <footer>
+    <p class="mb-0">&copy; 2025 duitRT | Support Khas.Network Solutions</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.getElementById('menuToggle')?.addEventListener('click', function () {
+      document.getElementById('sidebar').classList.toggle('active');
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

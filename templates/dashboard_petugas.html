@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard Petugas - Kas RT{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h2 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard Petugas</h2>
+  <p>Selamat datang, petugas <strong>{{ session['username'] }}</strong>.</p>
+  <p>Gunakan menu di samping untuk mencatat iuran warga dan melihat laporan mingguan.</p>
+</div>
+{% endblock %}
