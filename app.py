@@ -88,12 +88,35 @@ class User(db.Model):
 app.secret_key = 'rahasia'  # Ganti dengan secret key aman
 
 def insert_default_users():
+    # Admin
     if not User.query.filter_by(username='admin').first():
-        admin = User(username='admin', password='admin123', role='admin')
-       # user1 = User(username='user1', password='user123', role='user')
-        petugas = User(username='petugas1', password='petugas123', role='petugas')  # ⬅️ Petugas baru
-        db.session.add_all([admin, user1, petugas])
-        db.session.commit()
+        admin = User(
+            username='admin',
+            password=bcrypt.generate_password_hash('admin123').decode('utf-8'),
+            role='admin'
+        )
+        db.session.add(admin)
+
+    # Petugas
+    if not User.query.filter_by(username='petugas1').first():
+        petugas = User(
+            username='petugas1',
+            password=bcrypt.generate_password_hash('petugas123').decode('utf-8'),
+            role='petugas'
+        )
+        db.session.add(petugas)
+
+    # Warga (user biasa)
+    if not User.query.filter_by(username='warga1').first():
+        warga = User(
+            username='warga1',
+            password=bcrypt.generate_password_hash('warga123').decode('utf-8'),
+            role='user'
+        )
+        db.session.add(warga)
+
+    db.session.commit()
+
 
 
 
