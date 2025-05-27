@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Laporan Iuran Event{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h4 class="mb-4"><i class="bi bi-flag"></i> Laporan Iuran Event</h4>
+
+  <!-- Filter Bulan dan Tahun -->
+  <form method="get" class="row g-3 align-items-end mb-4">
+    <div class="col-md-2">
+      <label class="form-label">Bulan</label>
+      <select name="bulan" class="form-select form-select-sm">
+        {% for i in range(1, 13) %}
+        <option value="{{ i }}" {% if bulan == i %}selected{% endif %}>
+          {{ ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][i-1] }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label">Tahun</label>
+      <select name="tahun" class="form-select form-select-sm">
+        {% for y in range(2023, datetime.now().year + 1) %}
+        <option value="{{ y }}" {% if tahun == y %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-auto">
+      <button class="btn btn-sm btn-primary"><i class="bi bi-filter"></i> Tampilkan</button>
+    </div>
+  </form>
+
+  <!-- Tabel Laporan -->
+  <div class="card shadow mb-4">
+    <div class="card-header bg-light d-flex justify-content-between">
+      <strong>Iuran Event Bulan {{ bulan }}/{{ tahun }}</strong>
+      <strong>Total: Rp {{ "{:,.0f}".format(total) }}</strong>
+    </div>
+    <div class="card-body table-responsive">
+      <table class="table table-bordered table-striped table-sm">
+        <thead class="table-light">
+          <tr>
+            <th>No</th>
+            <th>Tanggal</th>
+            <th>Nama Warga</th>
+            <th>Event</th>
+            <th class="text-end">Jumlah</th>
+            <th>Petugas</th>
+            {% if session['role'] in ['admin', 'petugas'] %}
+            <th class="text-center">Aksi</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in iuran_event %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ i.tanggal.strftime('%d/%m/%Y') }}</td>
+            <td>{{ i.warga.nama }}</td>
+            <td>{{ i.nama_event }}</td>
+            <td class="text-end">Rp {{ "{:,.0f}".format(i.jumlah) }}</td>
+            <td>{{ i.petugas or '-' }}</td>
+            {% if session['role'] in ['admin', 'petugas'] %}
+            <td class="text-center">
+              <a href="{{ url_for('edit_iuran_event', id=i.id) }}" class="btn btn-sm btn-warning" title="Edit">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <button type="button" class="btn btn-sm btn-danger"
+                data-bs-toggle="modal"
+                data-bs-target="#modalHapus"
+                data-action="{{ url_for('hapus_iuran_event', id=i.id) }}"
+                title="Hapus">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+            {% endif %}
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-center">Tidak ada data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Konfirmasi Hapus -->
+<div class="modal fade" id="modalHapus" tabindex="-1" aria-labelledby="modalHapusLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form method="POST" id="formHapus">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="modalHapusLabel"><i class="bi bi-exclamation-triangle me-2"></i> Konfirmasi Hapus</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          Yakin ingin menghapus iuran event ini? Tindakan ini tidak bisa dibatalkan.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-danger">Hapus</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const modalHapus = document.getElementById('modalHapus');
+    modalHapus.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      const actionUrl = button.getAttribute('data-action');
+      const form = modalHapus.querySelector('#formHapus');
+      if (actionUrl && form) {
+        form.setAttribute('action', actionUrl);
+      }
+    });
+  });
+</script>
+{% endblock %}

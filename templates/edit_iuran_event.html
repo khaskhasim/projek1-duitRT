@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Edit Iuran Event{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 600px;">
+  <h4 class="mb-4 text-primary"><i class="bi bi-pencil-square"></i> Edit Iuran Event</h4>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="POST">
+    <div class="mb-3">
+      <label for="nama" class="form-label">Nama Warga</label>
+      <input type="text" class="form-control" id="nama" value="{{ iuran.warga.nama }}" disabled>
+    </div>
+
+    <div class="mb-3">
+      <label for="nama_event" class="form-label">Nama Event</label>
+      <select name="nama_event" id="nama_event" class="form-select" required>
+        {% for event in daftar_event %}
+        <option value="{{ event }}" {% if event == iuran.nama_event %}selected{% endif %}>{{ event }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="jumlah" class="form-label">Jumlah Iuran (Rp)</label>
+      <input type="number" name="jumlah" id="jumlah" class="form-control" required min="1000" step="500" value="{{ iuran.jumlah }}">
+    </div>
+
+    <div class="mb-3">
+      <label for="tanggal" class="form-label">Tanggal</label>
+      <input type="date" name="tanggal" id="tanggal" class="form-control" required value="{{ iuran.tanggal.strftime('%Y-%m-%d') }}">
+    </div>
+
+    <div class="d-flex justify-content-between">
+      <a href="{{ url_for('laporan_iuran_event') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Batal
+      </a>
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-save"></i> Simpan Perubahan
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

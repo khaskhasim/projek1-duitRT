@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Input Iuran - duitRT</title>
+  <title>Input Iuran Event - duitRT</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
   <style>
@@ -31,7 +31,7 @@
 </head>
 <body>
   <div class="container">
-    <h3 class="mb-4 text-primary"><i class="bi bi-person-check"></i> Input Iuran</h3>
+    <h3 class="mb-4 text-primary"><i class="bi bi-calendar-plus"></i> Input Iuran Event</h3>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for category, message in messages %}
@@ -51,12 +51,17 @@
 
       <div class="row g-3 mb-3">
         <div class="col-md-6">
-          <label for="total_bayar" class="form-label"><i class="bi bi-wallet2"></i> Total Pembayaran (Rp)</label>
-          <input type="number" class="form-control" id="total_bayar" name="total_bayar" required min="2000" step="1000" value="5000" />
+          <label for="total_bayar" class="form-label"><i class="bi bi-wallet2"></i> Jumlah Pembayaran (Rp)</label>
+          <input type="number" class="form-control" id="total_bayar" name="jumlah" required min="1000" step="500" value="10000" />
         </div>
         <div class="col-md-6">
-          <label for="jumlah_minggu" class="form-label"><i class="bi bi-calendar-week"></i> Jumlah Minggu</label>
-          <input type="number" class="form-control" id="jumlah_minggu" name="jumlah_minggu" required min="1" max="52" value="1" />
+          <label for="nama_event" class="form-label"><i class="bi bi-flag"></i> Pilih Event</label>
+          <select class="form-select" name="nama_event" id="nama_event" required>
+            <option disabled selected>-- Pilih Nama Event --</option>
+            {% for e in daftar_event %}
+            <option value="{{ e.nama }}">{{ e.nama }}</option>
+            {% endfor %}
+          </select>
         </div>
       </div>
 
@@ -67,27 +72,23 @@
           <span id="summary_total">Rp 10.000</span>
         </div>
         <div class="summary-item">
-          <span>Jumlah Minggu:</span>
-          <span id="summary_minggu">5</span>
+          <span>Nama Event:</span>
+          <span id="summary_event">-</span>
         </div>
-        <div class="summary-item summary-total">
-          <span>Iuran per Minggu:</span>
-          <span id="summary_perminggu">Rp 2.000</span>
-        </div>
-        <div id="perminggu-warning" class="text-danger small mt-2" style="display: none;"></div>
       </div>
 
       <div class="d-flex justify-content-between">
         <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
           <i class="bi bi-arrow-left"></i> Kembali
         </a>
-        <button type="submit" class="btn btn-primary" id="submitBtn">
+        <button type="submit" class="btn btn-primary">
           <i class="bi bi-save"></i> Catat Iuran
         </button>
       </div>
     </form>
   </div>
 
+  <!-- Autocomplete -->
   <script>
     const inputNama = document.getElementById("nama");
     const autocompleteList = document.getElementById("autocomplete-list");
@@ -129,45 +130,29 @@
       if (e.target !== inputNama) autocompleteList.style.display = "none";
     });
 
+    // Ringkasan
     const totalInput = document.getElementById("total_bayar");
-    const mingguInput = document.getElementById("jumlah_minggu");
+    const eventSelect = document.getElementById("nama_event");
     const summaryTotal = document.getElementById("summary_total");
-    const summaryMinggu = document.getElementById("summary_minggu");
-    const summaryPerMinggu = document.getElementById("summary_perminggu");
-    const perMingguWarning = document.getElementById("perminggu-warning");
-    const submitBtn = document.getElementById("submitBtn");
+    const summaryEvent = document.getElementById("summary_event");
 
     function formatRupiah(num) {
-      return "Rp " + num.toLocaleString("id-ID");
+      return "Rp " + parseInt(num || 0).toLocaleString("id-ID");
     }
 
     function updateRingkasan() {
       const total = parseInt(totalInput.value) || 0;
-      const minggu = parseInt(mingguInput.value) || 1;
-      const perMinggu = Math.floor(total / minggu);
+      const eventName = eventSelect.options[eventSelect.selectedIndex]?.text || "-";
 
       summaryTotal.textContent = formatRupiah(total);
-      summaryMinggu.textContent = minggu;
-      summaryPerMinggu.textContent = formatRupiah(perMinggu);
-
-      if (perMinggu > 5000) {
-        perMingguWarning.style.display = "block";
-        perMingguWarning.textContent = `⚠️ Iuran per minggu Rp ${perMinggu.toLocaleString("id-ID")} melebihi maksimal Rp 5.000.`;
-        submitBtn.disabled = true;
-      } else if (perMinggu < 2000) {
-        perMingguWarning.style.display = "block";
-        perMingguWarning.textContent = `⚠️ Iuran per minggu Rp ${perMinggu.toLocaleString("id-ID")} terlalu kecil. Minimal Rp 2.000.`;
-        submitBtn.disabled = true;
-      } else {
-        perMingguWarning.style.display = "none";
-        submitBtn.disabled = false;
-      }
+      summaryEvent.textContent = eventName;
     }
 
     totalInput.addEventListener("input", updateRingkasan);
-    mingguInput.addEventListener("input", updateRingkasan);
+    eventSelect.addEventListener("change", updateRingkasan);
     window.addEventListener("load", updateRingkasan);
   </script>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

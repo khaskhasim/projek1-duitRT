@@ -1,9 +1,97 @@
-{% extends 'base.html' %}
-{% block title %}Dashboard Petugas - Kas RT{% endblock %}
+{% extends "base.html" %}
+{% block title %}Dashboard Petugas - duitRT{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-  <h2 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard Petugas</h2>
-  <p>Selamat datang, petugas <strong>{{ session['username'] }}</strong>.</p>
-  <p>Gunakan menu di samping untuk mencatat iuran warga dan melihat laporan mingguan.</p>
+<div class="container">
+  <h2 class="mb-4">Dashboard Petugas</h2>
+  <div class="row g-4 mb-4">
+    <div class="col-md-4">
+      <div class="card text-white bg-success">
+        <div class="card-body">
+          <h5>Total Iuran</h5>
+          <h3>Rp {{ "{:,.0f}".format(total_iuran) }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-white bg-danger">
+        <div class="card-body">
+          <h5>Total Pengeluaran</h5>
+          <h3>Rp {{ "{:,.0f}".format(total_pengeluaran) }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-white bg-warning">
+        <div class="card-body">
+          <h5>Sisa Kas</h5>
+          <h3>Rp {{ "{:,.0f}".format(sisa_kas) }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+<div class="card mt-1">
+  <div class="card-header bg-white">
+    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Grafik Kas Bulan Ini</h5>
+  </div>
+  <div class="card-body">
+    <canvas id="grafikKasPetugas"></canvas>
+  </div>
 </div>
+  <h5 class="mb-3">Aktivitas Terkini</h5>
+  <div class="list-group">
+    {% for aktivitas in aktivitas_terkini %}
+    <div class="list-group-item d-flex justify-content-between">
+      <div><i class="bi {{ aktivitas.icon }} text-{{ aktivitas.color }} me-2"></i>{{ aktivitas.keterangan }}</div>
+      <small>{{ aktivitas.waktu }}</small>
+    </div>
+    {% else %}
+    <div class="text-muted">Belum ada aktivitas tercatat.</div>
+    {% endfor %}
+  </div>
+</div>
+
+
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('grafikKasPetugas').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ labels|tojson }},
+      datasets: [
+        {
+          label: 'Pemasukan',
+          data: {{ data_iuran|tojson }},
+          backgroundColor: '#198754'
+        },
+        {
+          label: 'Pengeluaran',
+          data: {{ data_pengeluaran|tojson }},
+          backgroundColor: '#dc3545'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': Rp ' + ctx.raw.toLocaleString('id-ID')
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: val => 'Rp ' + val.toLocaleString('id-ID')
+          }
+        }
+      }
+    }
+  });
+</script>
 {% endblock %}

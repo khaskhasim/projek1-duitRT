@@ -1,268 +1,238 @@
 {% extends "base.html" %}
-
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="card shadow mb-4">
-        <!-- Header -->
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h4 class="m-0 font-weight-bold text-primary">
-                <i class="bi bi-clipboard-data"></i> Laporan Kas RT
-            </h4>
-            <div class="dropdown">
-                <button class="btn btn-primary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="bi bi-download"></i> Export
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="{{ url_for('export_laporan', format='pdf', periode=request.args.get('periode', 'bulan-ini'), tgl_awal=request.args.get('tgl_awal'), tgl_akhir=request.args.get('tgl_akhir')) }}"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF</a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('export_laporan', format='excel', periode=request.args.get('periode', 'bulan-ini'), tgl_awal=request.args.get('tgl_awal'), tgl_akhir=request.args.get('tgl_akhir')) }}"><i class="bi bi-file-earmark-excel text-success me-2"></i>Excel</a></li>
-                </ul>
+  <div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+      <h4 class="m-0 font-weight-bold text-primary">
+        <i class="bi bi-clipboard-data"></i> Laporan duitRT
+      </h4>
+      <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-download"></i> Export
+        </button>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="{{ url_for('export_laporan', format='pdf', bulan=bulan, tahun=tahun) }}"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('export_laporan', format='excel', bulan=bulan, tahun=tahun) }}"><i class="bi bi-file-earmark-excel text-success me-2"></i>Excel</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <form method="get" class="row g-2 mb-4 align-items-end">
+        <div class="col-md-2">
+          <label for="bulan" class="form-label mb-1">Bulan</label>
+          <select name="bulan" id="bulan" class="form-select form-select-sm">
+            {% for i in range(1, 13) %}
+            <option value="{{ i }}" {% if bulan == i %}selected{% endif %}>
+              {{ ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][i-1] }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label for="tahun" class="form-label mb-1">Tahun</label>
+          <select name="tahun" id="tahun" class="form-select form-select-sm">
+            {% for y in range(2020, datetime.now().year + 1) %}
+            <option value="{{ y }}" {% if tahun == y %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-auto">
+          <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-filter"></i> Tampilkan</button>
+        </div>
+      </form>
+
+      <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+          <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body d-flex justify-content-between align-items-center">
+              <div>
+                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Pemasukan</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ "{:,.0f}".format(total_pemasukan) }}</div>
+              </div>
+              <i class="bi bi-cash-coin fs-1 text-primary"></i>
             </div>
+          </div>
         </div>
 
-        <!-- Body -->
+        <div class="col-xl-3 col-md-6 mb-4">
+          <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body d-flex justify-content-between align-items-center">
+              <div>
+                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Pengeluaran</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ "{:,.0f}".format(total_pengeluaran) }}</div>
+              </div>
+              <i class="bi bi-journal-minus fs-1 text-success"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+          <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body d-flex justify-content-between align-items-center">
+              <div>
+                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Saldo Kas</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ "{:,.0f}".format(saldo_kas) }}</div>
+              </div>
+              <i class="bi bi-wallet2 fs-1 text-info"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+          <div class="card border-left-dark shadow h-100 py-2">
+            <div class="card-body d-flex justify-content-between align-items-center">
+              <div>
+                <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">Total Iuran Pertahun</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ "{:,.0f}".format(total_iuran_tahun_ini) }}</div>
+              </div>
+              <i class="bi bi-calendar-check fs-1 text-dark"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ul class="nav nav-tabs mb-4" id="transactionTabs" role="tablist">
+        <li class="nav-item">
+          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pemasukan" type="button">Pemasukan ({{ pemasukan|length }})</button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#pengeluaran" type="button">Pengeluaran ({{ pengeluaran|length }})</button>
+        </li>
+      </ul>
+
+      <div class="tab-content" id="transactionTabsContent">
+        <div class="tab-pane fade show active" id="pemasukan">
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead class="table-light">
+                <tr>
+                  <th>No</th>
+                  <th>Tanggal</th>
+                  <th>Nama Warga</th>
+                  <th class="text-end">Jumlah</th>
+                  <th>Keterangan</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in pemasukan %}
+                <tr class="{% if item.__class__.__name__ == 'IuranEvent' %}table-warning{% endif %}">
+                  <td>{{ loop.index }}</td>
+                  <td>{{ item.tanggal.strftime('%d/%m/%Y') }}</td>
+                  <td>{{ item.warga.nama }}</td>
+                  <td class="text-end">Rp {{ "{:,.0f}".format(item.jumlah) }}</td>
+                  <td>
+                    {% if item.__class__.__name__ == 'IuranEvent' %}
+                      Event: {{ item.nama_event }}
+                    {% else %}
+                      Iuran Mingguan
+                    {% endif %}
+                  </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center">Tidak ada data pemasukan</td></tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr class="table-active">
+                  <th colspan="3">Total Pemasukan</th>
+                  <th class="text-end">Rp {{ "{:,.0f}".format(total_pemasukan) }}</th>
+                  <th></th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-pane fade" id="pengeluaran">
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead class="table-light">
+                <tr>
+                  <th>No</th>
+                  <th>Tanggal</th>
+                  <th>Keterangan</th>
+                  <th class="text-end">Jumlah</th>
+                  <th>Penerima</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in pengeluaran %}
+                <tr>
+                  <td>{{ loop.index }}</td>
+                  <td>{{ item.tanggal.strftime('%d/%m/%Y') }}</td>
+                  <td>{{ item.keterangan }}</td>
+                  <td class="text-end">Rp {{ "{:,.0f}".format(item.jumlah) }}</td>
+                  <td>{{ item.penerima or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center">Tidak ada data pengeluaran</td></tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr class="table-active">
+                  <th colspan="3">Total Pengeluaran</th>
+                  <th class="text-end">Rp {{ "{:,.0f}".format(total_pengeluaran) }}</th>
+                  <th></th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow mt-4">
+        <div class="card-header bg-white">
+          <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-bar-chart"></i> Grafik Kas Bulan Ini</h6>
+        </div>
         <div class="card-body">
-           <!-- Filter -->
-  <form method="get" class="row g-2 mb-4 align-items-end">
-    <div class="col-md-2">
-      <label for="bulan" class="form-label mb-1">Bulan</label>
-      <select name="bulan" id="bulan" class="form-select form-select-sm">
-        {% for i in range(1, 13) %}
-        <option value="{{ i }}" {% if bulan == i %}selected{% endif %}>
-          {{ ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][i-1] }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-2">
-      <label for="tahun" class="form-label mb-1">Tahun</label>
-      <select name="tahun" id="tahun" class="form-select form-select-sm">
-        {% for y in range(2020, datetime.now().year + 1) %}
-        <option value="{{ y }}" {% if tahun == y %}selected{% endif %}>{{ y }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-auto">
-      <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-filter"></i> Tampilkan</button>
-    </div>
-  </form>
-
-            <!-- Summary -->
-            <div class="row mb-4">
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-primary shadow h-100 py-2">
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Pemasukan</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ "{:,.0f}".format(total_pemasukan) }}</div>
-                            </div>
-                            <i class="bi bi-cash-coin fs-1 text-primary"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-success shadow h-100 py-2">
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Pengeluaran</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ "{:,.0f}".format(total_pengeluaran) }}</div>
-                            </div>
-                            <i class="bi bi-journal-minus fs-1 text-success"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-info shadow h-100 py-2">
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Saldo Kas</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">Rp {{ "{:,.0f}".format(saldo_kas) }}</div>
-                            </div>
-                            <i class="bi bi-wallet2 fs-1 text-info"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-warning shadow h-100 py-2">
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Transaksi Bulan Ini</div>
-                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_transaksi }}</div>
-                            </div>
-                            <i class="bi bi-list-check fs-1 text-warning"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tabs -->
-            <ul class="nav nav-tabs mb-4" id="transactionTabs" role="tablist">
-                <li class="nav-item">
-                    <button class="nav-link active" id="pemasukan-tab" data-bs-toggle="tab" data-bs-target="#pemasukan" type="button">Pemasukan ({{ pemasukan|length }})</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link" id="pengeluaran-tab" data-bs-toggle="tab" data-bs-target="#pengeluaran" type="button">Pengeluaran ({{ pengeluaran|length }})</button>
-                </li>
-            </ul>
-
-            <!-- Tab Contents -->
-            <div class="tab-content" id="transactionTabsContent">
-                <!-- Tab Pemasukan -->
-                <div class="tab-pane fade show active" id="pemasukan">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Tanggal</th>
-                                    <th>Nama Warga</th>
-                                    <th class="text-end">Jumlah</th>
-                                    <th>Keterangan</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in pemasukan %}
-                                <tr>
-                                    <td>{{ loop.index }}</td>
-                                    <td>{{ item.tanggal.strftime('%d/%m/%Y') }}</td>
-                                    <td>{{ item.warga.nama }}</td>
-                                    <td class="text-end">Rp {{ "{:,.0f}".format(item.jumlah) }}</td>
-                                    <td>{{ item.keterangan or '-' }}</td>
-                                </tr>
-                                {% else %}
-                                <tr><td colspan="5" class="text-center">Tidak ada data pemasukan</td></tr>
-                                {% endfor %}
-                            </tbody>
-                            <tfoot>
-                                <tr class="table-active">
-                                    <th colspan="3">Total Pemasukan</th>
-                                    <th class="text-end">Rp {{ "{:,.0f}".format(total_pemasukan) }}</th>
-                                    <th></th>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Tab Pengeluaran -->
-                <div class="tab-pane fade" id="pengeluaran">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>No</th>
-                                    <th>Tanggal</th>
-                                    <th>Keterangan</th>
-                                    <th class="text-end">Jumlah</th>
-                                    <th>Penerima</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in pengeluaran %}
-                                <tr>
-                                    <td>{{ loop.index }}</td>
-                                    <td>{{ item.tanggal.strftime('%d/%m/%Y') }}</td>
-                                    <td>{{ item.keterangan }}</td>
-                                    <td class="text-end">Rp {{ "{:,.0f}".format(item.jumlah) }}</td>
-                                    <td>{{ item.penerima or '-' }}</td>
-                                </tr>
-                                {% else %}
-                                <tr><td colspan="5" class="text-center">Tidak ada data pengeluaran</td></tr>
-                                {% endfor %}
-                            </tbody>
-                            <tfoot>
-                                <tr class="table-active">
-                                    <th colspan="3">Total Pengeluaran</th>
-                                    <th class="text-end">Rp {{ "{:,.0f}".format(total_pengeluaran) }}</th>
-                                    <th></th>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Grafik -->
-            <div class="card shadow mt-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-bar-chart"></i> Grafik Kas Bulan Ini</h6>
-                </div>
-                <div class="card-body">
-                    <canvas id="kasChart"></canvas>
-                </div>
-            </div>
+          <canvas id="kasChart"></canvas>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    function toggleCustomDate() {
-        const periode = document.getElementById('periode').value;
-        document.querySelectorAll('.custom-date').forEach(el => {
-            el.style.display = periode === 'custom' ? 'block' : 'none';
-        });
-    }
-
-    function updateReport() {
-        const periode = document.getElementById('periode').value;
-        let url = "{{ url_for('laporan') }}?periode=" + encodeURIComponent(periode);
-        
-        if (periode === 'custom') {
-            const tglAwal = document.getElementById('tanggal-awal').value;
-            const tglAkhir = document.getElementById('tanggal-akhir').value;
-            if (tglAwal > tglAkhir) {
-                alert("Tanggal awal tidak boleh lebih besar dari tanggal akhir.");
-                return;
-            }
-            url += "&tgl_awal=" + encodeURIComponent(tglAwal) + "&tgl_akhir=" + encodeURIComponent(tglAkhir);
-        }
-
-        window.location.href = url;
-    }
-
-    const ctx = document.getElementById('kasChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: {{ labels|tojson }},
-            datasets: [
-                {
-                    label: 'Pemasukan',
-                    backgroundColor: '#4e73df',
-                    data: {{ pemasukan_data|tojson }}
-                },
-                {
-                    label: 'Pengeluaran',
-                    backgroundColor: '#e74a3b',
-                    data: {{ pengeluaran_data|tojson }}
-                }
-            ]
+  const ctx = document.getElementById('kasChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ labels|tojson }},
+      datasets: [
+        {
+          label: 'Pemasukan',
+          backgroundColor: '#4e73df',
+          data: {{ pemasukan_data|tojson }}
         },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: value => 'Rp ' + value.toLocaleString('id-ID')
-                    }
-                }
-            },
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: context => {
-                            return context.dataset.label + ': Rp ' + context.raw.toLocaleString('id-ID');
-                        }
-                    }
-                }
-            }
+        {
+          label: 'Pengeluaran',
+          backgroundColor: '#e74a3b',
+          data: {{ pengeluaran_data|tojson }}
         }
-    });
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: context => context.dataset.label + ': Rp ' + context.raw.toLocaleString('id-ID')
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: value => 'Rp ' + value.toLocaleString('id-ID')
+          }
+        }
+      }
+    }
+  });
 </script>
 {% endblock %}

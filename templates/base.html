@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Admin Dashboard - Kas RT{% endblock %}</title>
+  <title>{% block title %}Admin Dashboard - duitRT{% endblock %}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <style>
@@ -112,7 +112,20 @@
       <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo">
       duitRT
     </div>
-    <div><i class="bi bi-person-circle me-2"></i>{{ session['username'] }}</div>
+<div class="dropdown">
+  <button class="btn btn-outline-light dropdown-toggle" type="button" id="dropdownUser" data-bs-toggle="dropdown" aria-expanded="false">
+    <i class="bi bi-person-circle me-1"></i> {{ session['username'] }}
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><a class="dropdown-item" href="#"><i class="bi bi-person-lines-fill me-2"></i> Profil</a></li>
+    {% if session['role'] == 'admin' %}
+    <li><a class="dropdown-item" href="{{ url_for('manajemen_user') }}"><i class="bi bi-gear me-2"></i> Manajemen User</a></li>
+    {% endif %}
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2"></i> Logout</a></li>
+  </ul>
+</div>
+
   </nav>
 <div class="sidebar" id="sidebar">
   <a href="{{ url_for('index') }}"><i class="bi bi-house"></i><span class="sidebar-text">Beranda</span></a>
@@ -122,35 +135,45 @@
     <a href="{{ url_for('data_warga') }}"><i class="bi bi-person-plus"></i><span class="sidebar-text">Data Warga</span></a>
     <a href="{{ url_for('input_iuran_petugas') }}"><i class="bi bi-cash-coin"></i><span class="sidebar-text">Input Iuran</span></a>
     <a href="{{ url_for('daftar_iuran') }}"><i class="bi bi-table"></i><span class="sidebar-text">Daftar Iuran</span></a>
+    <a href="{{ url_for('input_iuran_event_petugas') }}"><i class="bi bi-calendar-plus"></i> Input Iuran Event</a>
     <a href="{{ url_for('tambah_pengeluaran') }}"><i class="bi bi-journal-minus"></i><span class="sidebar-text">Tambah Pengeluaran</span></a>
 
     <div class="menu-title mt-3">Laporan</div>
     <a href="{{ url_for('laporan') }}"><i class="bi bi-clipboard-data"></i><span class="sidebar-text">Laporan Keuangan</span></a>
-    <a href="{{ url_for('laporan_input_petugas') }}"><i class="bi bi-person-lines-fill"></i><span class="sidebar-text">Laporan Input</span></a>
-    <a href="{{ url_for('laporan_iuran_perminggu') }}"><i class="bi bi-graph-up"></i><span class="sidebar-text">Laporan Mingguan</span></a>
+    <a href="{{ url_for('laporan_input_petugas') }}"><i class="bi bi-person-lines-fill"></i><span class="sidebar-text">Laporan Petugas</span></a>
+    <a href="{{ url_for('laporan_iuran_perminggu') }}"><i class="bi bi-graph-up"></i><span class="sidebar-text">Laporan Iuaran</span></a>
+    <a href="{{ url_for('laporan_iuran_event') }}"><i class="bi bi-graph-up"></i><span class="sidebar-text">Laporan Iuaran Event</span></a>
 
   {% elif session['role'] == 'petugas' %}
     <div class="menu-title">Tugas</div>
     <a href="{{ url_for('input_iuran_petugas') }}"><i class="bi bi-cash-coin"></i><span class="sidebar-text">Input Iuran</span></a>
     <a href="{{ url_for('daftar_iuran') }}"><i class="bi bi-table"></i><span class="sidebar-text">Daftar Iuran</span></a>
+    <a href="{{ url_for('input_iuran_event_petugas') }}"><i class="bi bi-calendar-plus"></i> Input Iuran Event</a>
     <a href="{{ url_for('tambah_pengeluaran') }}"><i class="bi bi-journal-minus"></i><span class="sidebar-text">Tambah Pengeluaran</span></a>
+    
 
     <div class="menu-title mt-3">Laporan</div>
     <a href="{{ url_for('laporan_input_petugas') }}"><i class="bi bi-person-lines-fill"></i><span class="sidebar-text">Laporan Input</span></a>
     <a href="{{ url_for('laporan_iuran_perminggu') }}"><i class="bi bi-graph-up-arrow"></i><span class="sidebar-text">Laporan Mingguan</span></a>
+    <a href="{{ url_for('laporan_iuran_event') }}"><i class="bi bi-graph-up"></i><span class="sidebar-text">Laporan Iuaran Event</span></a>
+
 
   {% elif session['role'] == 'user' %}
     <div class="menu-title">Laporan</div>
     <a href="{{ url_for('laporan') }}"><i class="bi bi-clipboard-check"></i><span class="sidebar-text">Riwayat Keuangan</span></a>
     <a href="{{ url_for('iuran_saya') }}"><i class="bi bi-graph-up"></i><span class="sidebar-text">Iuran Saya</span></a>
+    <a href="{{ url_for('laporan_iuran_event') }}"><i class="bi bi-graph-up"></i><span class="sidebar-text">Laporan Iuaran Event</span></a>
+
   {% endif %}
 
-  <div class="menu-title mt-3">Akun</div>
+
   {% if session['role'] == 'admin' %}
+    <div class="menu-title mt-3">Akun</div>
+  <a href="{{ url_for('manajemen_event') }}"><i class="bi bi-list-check"></i> Kelola Event</a>
 <a href="{{ url_for('manajemen_user') }}"><i class="bi bi-person-gear"></i><span class="sidebar-text">Manajemen User</span></a>
 {% endif %}
 
-  <a href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i><span class="sidebar-text">Logout</span></a>
+
 </div>
 
 
@@ -171,7 +194,7 @@
   </div>
 
   <footer>
-    <p class="mb-0">&copy; 2025 duitRT | Support Khas.Network Solutions</p>
+    <p class="mb-0">&copy; 2025 duitRT | Khas.Network Solutions</p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
