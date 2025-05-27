@@ -24,7 +24,7 @@ db = SQLAlchemy()
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///kas_rt.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data/kas_rt.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'rahasia-sangat-rahasia'  # Tambahkan secret key
 db = SQLAlchemy(app)
