@@ -6,4 +6,4 @@ flask_cors
 xlsxwriter
 fpdf
 pytz
-pandas
+gunicorn

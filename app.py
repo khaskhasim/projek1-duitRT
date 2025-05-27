@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, date, timedelta
-from sqlalchemy.sql import extract
+from sqlalchemy.sql import func, extract, literal_column
 from collections import defaultdict
 from flask_migrate import Migrate
 import calendar
@@ -17,7 +17,7 @@ from flask_bcrypt import Bcrypt
 from sqlalchemy import func, extract, desc, literal
 from pytz import timezone
 import calendar
-import os
+
 
 
 db = SQLAlchemy()
@@ -30,7 +30,6 @@ app.config['SECRET_KEY'] = 'rahasia-sangat-rahasia'  # Tambahkan secret key
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)  # Pindahkan ke sini untuk inisialisasi yang benar
 
-os.makedirs('data', exist_ok=True)
 # =====================
 # MODEL DATABASE
 # =====================
@@ -57,6 +56,21 @@ class Iuran(db.Model):
 
     # Relasi ke model Warga
     warga = db.relationship('Warga', backref=db.backref('iurans', lazy=True))
+
+class IuranEvent(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    warga_id = db.Column(db.Integer, db.ForeignKey('warga.id'), nullable=False)
+    nama_event = db.Column(db.String(100), nullable=False)
+    tanggal = db.Column(db.DateTime, default=datetime.utcnow)
+    jumlah = db.Column(db.Integer, nullable=False)
+    keterangan = db.Column(db.String(255))
+    petugas = db.Column(db.String(100))  # bisa diisi 'admin', 'petugas', atau nama warga yang input
+
+    warga = db.relationship('Warga', backref='iuran_event')
+
+class EventNama(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nama = db.Column(db.String(100), nullable=False, unique=True)
 
 
 # Model Pengeluaran
@@ -88,6 +102,7 @@ class User(db.Model):
 
 app.secret_key = 'rahasia'  # Ganti dengan secret key aman
 
+
 def insert_default_users():
     # Admin
     if not User.query.filter_by(username='admin').first():
@@ -118,13 +133,6 @@ def insert_default_users():
 
     db.session.commit()
 
-
-
-
-
-from pytz import timezone
-from sqlalchemy import literal
-
 def get_aktivitas_terkini(limit=10):
     zona_wib = timezone('Asia/Jakarta')
 
@@ -134,11 +142,9 @@ def get_aktivitas_terkini(limit=10):
             Iuran.jumlah,
             Warga.nama.label('nama'),
             Iuran.petugas,
-            literal('Iuran').label('jenis')
+            literal_column("'Iuran'").label('jenis')
         )
         .join(Warga)
-        .order_by(Iuran.tanggal.desc())
-        .limit(limit)
         .all()
     )
 
@@ -148,27 +154,26 @@ def get_aktivitas_terkini(limit=10):
             Pengeluaran.jumlah,
             Pengeluaran.keterangan.label('nama'),
             Pengeluaran.petugas,
-            literal('Pengeluaran').label('jenis')
+            literal_column("'Pengeluaran'").label('jenis')
         )
-        .order_by(Pengeluaran.tanggal.desc())
-        .limit(limit)
         .all()
     )
 
-    gabung = iuran_data + pengeluaran_data
-    gabung.sort(key=lambda x: x.tanggal, reverse=True)
+    # Gabungkan semua aktivitas
+    semua = iuran_data + pengeluaran_data
+
+    # Ubah ke zona WIB & sortir berdasarkan waktu (terbaru di atas)
+    semua.sort(key=lambda x: x.tanggal.astimezone(zona_wib), reverse=True)
 
     aktivitas = []
-    for item in gabung[:limit]:
+    for item in semua[:limit]:
         waktu = item.tanggal.astimezone(zona_wib).strftime('%d/%m/%Y %H:%M')
-        petugas = item.petugas or "Tidak Diketahui"
-
         if item.jenis == 'Iuran':
-            keterangan = f"💰 {item.nama} membayar iuran Rp {item.jumlah:,} (oleh {petugas})"
+            keterangan = f"💰 {item.nama} membayar iuran sebesar Rp {item.jumlah:,} oleh {item.petugas or '–'}"
             warna = "success"
             ikon = "bi-cash-coin"
         else:
-            keterangan = f"🧾 Pengeluaran: {item.nama} Rp {item.jumlah:,} (oleh {petugas})"
+            keterangan = f"🧾 Pengeluaran: {item.nama} sebesar Rp {item.jumlah:,} oleh {item.petugas or '–'}"
             warna = "danger"
             ikon = "bi-credit-card-2-front"
 
@@ -180,7 +185,6 @@ def get_aktivitas_terkini(limit=10):
         })
 
     return aktivitas
-
 
 
 
@@ -228,9 +232,6 @@ def logout():
 def inject_datetime():
     return dict(datetime=datetime, date=date)
 
-
-
-
 @app.route('/dashboard')
 def dashboard():
     if 'username' not in session:
@@ -241,27 +242,43 @@ def dashboard():
     if role == 'admin':
         total_warga = db.session.query(func.count(Warga.id)).scalar() or 0
         warga_aktif = db.session.query(func.count(Warga.id)).filter(Warga.status == 'aktif').scalar() or 0
-        total_iuran = db.session.query(func.sum(Iuran.jumlah)).scalar() or 0
+
+        total_iuran_reguler = db.session.query(func.sum(Iuran.jumlah)).scalar() or 0
+        total_iuran_event = db.session.query(func.sum(IuranEvent.jumlah)).scalar() or 0
+        total_iuran = total_iuran_reguler + total_iuran_event
+
         total_pengeluaran = db.session.query(func.sum(Pengeluaran.jumlah)).scalar() or 0
         sisa_kas = total_iuran - total_pengeluaran
 
         bulan_ini = datetime.now(timezone('Asia/Jakarta')).month
+        tahun_ini = datetime.now(timezone('Asia/Jakarta')).year
+
         iuran_bulan_ini = db.session.query(func.sum(Iuran.jumlah)).filter(
-            extract('month', Iuran.tanggal) == bulan_ini
+            extract('month', Iuran.tanggal) == bulan_ini,
+            extract('year', Iuran.tanggal) == tahun_ini
         ).scalar() or 0
 
+        iuran_event_bulan_ini = db.session.query(func.sum(IuranEvent.jumlah)).filter(
+            extract('month', IuranEvent.tanggal) == bulan_ini,
+            extract('year', IuranEvent.tanggal) == tahun_ini
+        ).scalar() or 0
+
+        total_iuran_bulan_ini = (iuran_bulan_ini or 0) + (iuran_event_bulan_ini or 0)
+
         target_iuran = total_warga * 600000
-        persentase_iuran_bulan_ini = round((iuran_bulan_ini / target_iuran) * 100) if target_iuran > 0 else 0
+        persentase_iuran_bulan_ini = round((total_iuran_bulan_ini / target_iuran) * 100) if target_iuran > 0 else 0
 
         pengeluaran_bulan_ini = db.session.query(func.sum(Pengeluaran.jumlah)).filter(
-            extract('month', Pengeluaran.tanggal) == bulan_ini
+            extract('month', Pengeluaran.tanggal) == bulan_ini,
+            extract('year', Pengeluaran.tanggal) == tahun_ini
         ).scalar() or 0
 
         anggaran_bulanan = 200000
         persentase_pengeluaran_bulan_ini = round((pengeluaran_bulan_ini / anggaran_bulanan) * 100) if anggaran_bulanan > 0 else 0
 
         warga_bayar_bulan_ini = db.session.query(Iuran.warga_id).filter(
-            extract('month', Iuran.tanggal) == bulan_ini
+            extract('month', Iuran.tanggal) == bulan_ini,
+            extract('year', Iuran.tanggal) == tahun_ini
         ).distinct().count()
 
         persentase_warga_aktif = round((warga_bayar_bulan_ini / warga_aktif) * 100) if warga_aktif > 0 else 0
@@ -280,14 +297,84 @@ def dashboard():
         )
 
     elif role == 'petugas':
-        return render_template('dashboard_petugas.html')
+        total_iuran_reguler = db.session.query(func.sum(Iuran.jumlah)).scalar() or 0
+        total_iuran_event = db.session.query(func.sum(IuranEvent.jumlah)).scalar() or 0
+        total_iuran = total_iuran_reguler + total_iuran_event
+        total_pengeluaran = db.session.query(func.sum(Pengeluaran.jumlah)).scalar() or 0
+        sisa_kas = total_iuran - total_pengeluaran
+
+        aktivitas_terkini = get_aktivitas_terkini()
+
+        bulan_ini = datetime.now().month
+        tahun_ini = datetime.now().year
+
+        # Grafik mingguan pemasukan dan pengeluaran
+        from collections import defaultdict
+        mingguan_iuran = defaultdict(int)
+        mingguan_pengeluaran = defaultdict(int)
+
+        iurans = Iuran.query.filter(
+            extract('month', Iuran.tanggal) == bulan_ini,
+            extract('year', Iuran.tanggal) == tahun_ini
+        ).all()
+
+        pengeluarans = Pengeluaran.query.filter(
+            extract('month', Pengeluaran.tanggal) == bulan_ini,
+            extract('year', Pengeluaran.tanggal) == tahun_ini
+        ).all()
+
+        for i in iurans:
+            minggu = ((i.tanggal.day - 1) // 7) + 1
+            mingguan_iuran[minggu] += i.jumlah
+
+        for p in pengeluarans:
+            minggu = ((p.tanggal.day - 1) // 7) + 1
+            mingguan_pengeluaran[minggu] += p.jumlah
+
+        labels = [f"Minggu {i}" for i in range(1, 6)]
+        data_iuran = [mingguan_iuran[i] for i in range(1, 6)]
+        data_pengeluaran = [mingguan_pengeluaran[i] for i in range(1, 6)]
+
+        return render_template('dashboard_petugas.html',
+            total_iuran=total_iuran,
+            total_pengeluaran=total_pengeluaran,
+            sisa_kas=sisa_kas,
+            aktivitas_terkini=aktivitas_terkini,
+            labels=labels,
+            data_iuran=data_iuran,
+            data_pengeluaran=data_pengeluaran
+        )
 
     elif role == 'user':
-        return render_template('dashboard_user.html')
+        warga = Warga.query.filter_by(username=session['username']).first()
+        if not warga:
+            flash("Data warga tidak ditemukan", "danger")
+            return redirect(url_for('logout'))
+
+        iuran_user = db.session.query(func.sum(Iuran.jumlah)).filter_by(warga_id=warga.id).scalar() or 0
+        iuran_event_user = db.session.query(func.sum(IuranEvent.jumlah)).filter_by(warga_id=warga.id).scalar() or 0
+        total_iuran_user = iuran_user + iuran_event_user
+
+        # Histori iuran per bulan
+        histori = db.session.query(
+            extract('year', Iuran.tanggal).label('tahun'),
+            extract('month', Iuran.tanggal).label('bulan'),
+            func.sum(Iuran.jumlah).label('jumlah_reguler'),
+            func.coalesce(func.sum(IuranEvent.jumlah), 0).label('jumlah_event')
+        ).outerjoin(IuranEvent, Iuran.warga_id == IuranEvent.warga_id).filter(
+            Iuran.warga_id == warga.id
+        ).group_by('tahun', 'bulan').order_by('tahun', 'bulan').all()
+
+        return render_template('dashboard_user.html',
+            nama=warga.nama,
+            total_iuran_user=total_iuran_user,
+            histori=histori
+        )
 
     else:
         flash("Peran tidak dikenali", "danger")
         return redirect(url_for('logout'))
+
 
 
 @app.route('/input_iuran_petugas', methods=['GET', 'POST'])
@@ -432,8 +519,14 @@ def laporan():
     start_date = date(tahun, bulan, 1)
     end_date = date(tahun, bulan, calendar.monthrange(tahun, bulan)[1])
 
-    # Query data sesuai rentang
-    pemasukan = Iuran.query.filter(Iuran.tanggal.between(start_date, end_date)).all()
+    # Ambil data Iuran bulanan & event
+    pemasukan_iuran = Iuran.query.filter(Iuran.tanggal.between(start_date, end_date)).all()
+    pemasukan_event = IuranEvent.query.filter(IuranEvent.tanggal.between(start_date, end_date)).all()
+
+    # Gabungkan pemasukan
+    pemasukan = pemasukan_iuran + pemasukan_event
+
+    # Ambil pengeluaran
     pengeluaran = Pengeluaran.query.filter(Pengeluaran.tanggal.between(start_date, end_date)).all()
 
     # Hitung total
@@ -442,16 +535,30 @@ def laporan():
     saldo_kas = total_pemasukan - total_pengeluaran
     total_transaksi = len(pemasukan) + len(pengeluaran)
 
-    # Untuk grafik mingguan
+    # Total iuran bulanan tahun ini
+    total_iuran_tahun_ini = db.session.query(func.sum(Iuran.jumlah))\
+        .filter(extract('year', Iuran.tanggal) == tahun)\
+        .scalar() or 0
+    # Total iuran event tahun ini
+    total_iuran_event_tahun_ini = db.session.query(func.sum(IuranEvent.jumlah))\
+        .filter(extract('year', IuranEvent.tanggal) == tahun)\
+        .scalar() or 0
+        # Gabungan total
+    total_iuran_tahun_ini += total_iuran_event_tahun_ini
+    # Grafik mingguan (gabungan iuran + event)
     labels = [f"Minggu {i}" for i in range(1, 6)]
     pemasukan_data = [0] * 5
     pengeluaran_data = [0] * 5
+
     for i in pemasukan:
         week = ((i.tanggal.day - 1) // 7)
-        pemasukan_data[week] += i.jumlah
+        if 0 <= week < 5:
+            pemasukan_data[week] += i.jumlah
+
     for p in pengeluaran:
         week = ((p.tanggal.day - 1) // 7)
-        pengeluaran_data[week] += p.jumlah
+        if 0 <= week < 5:
+            pengeluaran_data[week] += p.jumlah
 
     return render_template('laporan.html',
         pemasukan=pemasukan,
@@ -465,9 +572,11 @@ def laporan():
         pengeluaran_data=pengeluaran_data,
         bulan=bulan,
         tahun=tahun,
+        total_iuran_tahun_ini=total_iuran_tahun_ini,
         date=date,
         datetime=datetime
     )
+
 
 
 
@@ -908,7 +1017,7 @@ def import_warga():
 class PDF(FPDF):
     def header(self):
         self.set_font("Arial", "B", 12)
-        self.cell(0, 10, "Laporan Kas RT", ln=True, align="C")
+        self.cell(0, 10, "Laporan duitRT", ln=True, align="C")
         self.ln(5)
 
     def footer(self):
@@ -957,13 +1066,26 @@ def export_laporan(format):
     tgl_awal, tgl_akhir = get_filter_dates()
     zona_wib = timezone('Asia/Jakarta')
 
-    pemasukan = (
+    pemasukan_iuran = (
         db.session.query(Iuran)
         .join(Warga)
         .filter(Iuran.tanggal.between(tgl_awal, tgl_akhir))
-        .order_by(Iuran.tanggal.asc())
         .all()
     )
+
+    pemasukan_event = (
+        db.session.query(IuranEvent)
+        .join(Warga)
+        .filter(IuranEvent.tanggal.between(tgl_awal, tgl_akhir))
+        .all()
+    )
+
+    # Gabungkan jadi satu list
+    pemasukan = pemasukan_iuran + pemasukan_event
+
+    # Urutkan berdasarkan tanggal
+    pemasukan.sort(key=lambda x: x.tanggal)
+
 
     pengeluaran = (
         db.session.query(Pengeluaran)
@@ -986,11 +1108,16 @@ def export_laporan(format):
 
         for idx, item in enumerate(pemasukan, 1):
             tanggal = item.tanggal.astimezone(zona_wib).strftime('%d/%m/%Y %H:%M')
+            nama = item.warga.nama
+            jumlah = item.jumlah
+            sumber = f"Event: {item.nama_event}" if item.__class__.__name__ == "IuranEvent" else "Iuran Bulanan"
+
             ws1.write(idx, 0, idx)
             ws1.write(idx, 1, tanggal)
-            ws1.write(idx, 2, item.warga.nama)
-            ws1.write(idx, 3, item.jumlah)
-            ws1.write(idx, 4, 'Iuran')
+            ws1.write(idx, 2, nama)
+            ws1.write(idx, 3, jumlah)
+            ws1.write(idx, 4, sumber)
+
 
         # Sheet Pengeluaran
         ws2 = workbook.add_worksheet('Pengeluaran')
@@ -1019,7 +1146,7 @@ def export_laporan(format):
             i.tanggal.astimezone(zona_wib).strftime('%d/%m/%Y %H:%M'),
             i.warga.nama,
             f"Rp {i.jumlah:,}",
-            "Iuran"
+            f"Event: {i.nama_event}" if i.__class__.__name__ == "IuranEvent" else "Iuran Bulanan"
         ] for idx, i in enumerate(pemasukan, 1)]
 
         pengeluaran_rows = [[
@@ -1148,6 +1275,131 @@ def iuran_saya():
     total = sum(i.jumlah for i in iurans)
 
     return render_template('iuran_saya.html', iurans=iurans, total=total)
+
+
+@app.route('/input_iuran_event_petugas', methods=['GET', 'POST'])
+def input_iuran_event_petugas():
+    if 'username' not in session or session['role'] not in ['admin', 'petugas']:
+        flash("Akses ditolak", "danger")
+        return redirect(url_for('login'))
+
+    from pytz import timezone
+    zona_wib = timezone('Asia/Jakarta')
+
+    if request.method == 'POST':
+        nama = request.form['nama'].strip()
+        nama_event = request.form['nama_event'].strip()
+        jumlah = request.form['jumlah']
+
+        warga = Warga.query.filter_by(nama=nama).first()
+        if not warga:
+            flash("❌ Warga tidak ditemukan", "danger")
+            return redirect(url_for('input_iuran_event_petugas'))
+
+        # Simpan ke database
+        iuran = IuranEvent(
+            warga_id=warga.id,
+            nama_event=nama_event,
+            jumlah=int(jumlah),
+            petugas=session['username'],
+            tanggal=datetime.now(zona_wib)
+        )
+        db.session.add(iuran)
+        db.session.commit()
+        flash("✅ Iuran Event berhasil dicatat", "success")
+        return redirect(url_for('input_iuran_event_petugas'))
+
+    # Data event dan riwayat untuk form dan tabel
+    daftar_event = EventNama.query.order_by(EventNama.nama).all()
+    data = IuranEvent.query.order_by(IuranEvent.tanggal.desc()).limit(20).all()
+    return render_template('input_iuran_event_petugas.html', daftar_event=daftar_event, data=data)
+
+
+
+@app.route('/manajemen_event', methods=['GET', 'POST'])
+def manajemen_event():
+    if session.get('role') != 'admin':
+        flash("Akses ditolak", "danger")
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        nama_event = request.form['nama'].strip()
+        if EventNama.query.filter_by(nama=nama_event).first():
+            flash("Nama event sudah ada", "warning")
+        else:
+            db.session.add(EventNama(nama=nama_event))
+            db.session.commit()
+            flash("Event berhasil ditambahkan", "success")
+        return redirect(url_for('manajemen_event'))
+
+    events = EventNama.query.order_by(EventNama.nama).all()
+    return render_template('manajemen_event.html', events=events)
+
+
+@app.route('/event/hapus/<int:id>', methods=['POST'])
+def hapus_event(id):
+    if session.get('role') != 'admin':
+        flash("Akses ditolak", "danger")
+        return redirect(url_for('dashboard'))
+
+    event = EventNama.query.get_or_404(id)
+    db.session.delete(event)
+    db.session.commit()
+    flash("Event berhasil dihapus", "success")
+    return redirect(url_for('manajemen_event'))
+
+
+@app.route('/laporan_iuran_event')
+def laporan_iuran_event():
+    bulan = request.args.get('bulan', default=date.today().month, type=int)
+    tahun = request.args.get('tahun', default=date.today().year, type=int)
+
+    start_date = date(tahun, bulan, 1)
+    end_date = date(tahun, bulan, calendar.monthrange(tahun, bulan)[1])
+
+    iuran_event = IuranEvent.query.filter(
+        IuranEvent.tanggal.between(start_date, end_date)
+    ).order_by(IuranEvent.tanggal.asc()).all()
+
+    total = sum(i.jumlah for i in iuran_event)
+
+    daftar_event = db.session.query(IuranEvent.nama_event)\
+        .distinct().order_by(IuranEvent.nama_event).all()
+    
+    return render_template('laporan_iuran_event.html',
+        iuran_event=iuran_event,
+        total=total,
+        bulan=bulan,
+        tahun=tahun,
+        daftar_event=daftar_event,
+        datetime=datetime
+    )
+
+@app.route('/iuran_event/edit/<int:id>', methods=['GET', 'POST'])
+def edit_iuran_event(id):
+    iuran = IuranEvent.query.get_or_404(id)
+
+    daftar_event = db.session.query(IuranEvent.nama_event).distinct().order_by(IuranEvent.nama_event).all()
+    event_list = [e.nama_event for e in daftar_event]
+
+    if request.method == 'POST':
+        iuran.jumlah = int(request.form['jumlah'])
+        iuran.nama_event = request.form['nama_event']
+        iuran.tanggal = datetime.strptime(request.form['tanggal'], '%Y-%m-%d')
+        db.session.commit()
+        flash('Iuran Event berhasil diperbarui', 'success')
+        return redirect(url_for('laporan_iuran_event'))
+
+    return render_template('edit_iuran_event.html', iuran=iuran, daftar_event=event_list)
+
+
+@app.route('/iuran_event/hapus/<int:id>', methods=['POST'])
+def hapus_iuran_event(id):
+    iuran = IuranEvent.query.get_or_404(id)
+    db.session.delete(iuran)
+    db.session.commit()
+    flash('Iuran Event berhasil dihapus', 'success')
+    return redirect(url_for('laporan_iuran_event'))
 
 
 # =====================

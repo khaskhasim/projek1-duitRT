@@ -1,18 +1,10 @@
-# Gunakan image python resmi
-FROM python:3.10-slim
+FROM python:3.11-slim
 
-# Buat direktori kerja di dalam container
 WORKDIR /app
 
-# Copy semua file ke dalam container
-COPY . .
+COPY . /app
 
-# Install dependency
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
-# Expose port Flask
-EXPOSE 5000
-
-# Jalankan aplikasi
-CMD ["python", "app.py"]
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app:app"]
