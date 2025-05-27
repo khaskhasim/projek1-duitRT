@@ -7,3 +7,4 @@ xlsxwriter
 fpdf
 pytz
 gunicorn
+pandas
