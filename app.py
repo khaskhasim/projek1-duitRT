@@ -17,7 +17,7 @@ from flask_bcrypt import Bcrypt
 from sqlalchemy import func, extract, desc, literal
 from pytz import timezone
 import calendar
-
+import os
 
 
 db = SQLAlchemy()
@@ -30,6 +30,7 @@ app.config['SECRET_KEY'] = 'rahasia-sangat-rahasia'  # Tambahkan secret key
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)  # Pindahkan ke sini untuk inisialisasi yang benar
 
+os.makedirs('data', exist_ok=True)
 # =====================
 # MODEL DATABASE
 # =====================
